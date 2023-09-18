@@ -1,0 +1,15 @@
+{
+  "name": "english_study_bot",
+  "version": "1.0.0",
+  "description": "A skype based helper bot built to help you practice new words and study and revise them.",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "@MunaLombe",
+  "license": "ISC",
+  "dependencies": {
+    "botbuilder": "^4.20.0",
+    "restify": "^11.1.0"
+  }
+}

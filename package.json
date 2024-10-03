@@ -1,15 +1,17 @@
 {
-  "name": "english_study_bot",
-  "version": "1.0.0",
-  "description": "A skype based helper bot built to help you practice new words and study and revise them.",
-  "main": "index.js",
-  "scripts": {
-    "test": "test"
-  },
-  "author": "@MunaLombe",
-  "license": "ISC",
-  "dependencies": {
-    "botbuilder": "^4.20.0",
-    "restify": "^11.1.0"
+    "name": "learninghelper",
+    "version": "1.0.0",
+    "description": "A Telegram bot to help teachers and students learn better.",
+    "main": "app.js",
+    "scripts": {
+      "start": "node app.js"
+    },
+    "dependencies": {
+      "telegraf": "^4.7.0",
+      "@telegraf/session": "^2.0.0-beta.7",
+      "sequelize": "^6.6.5",
+      "pg": "^8.6.0",
+      "dotenv": "^10.0.0",
+      "node-fetch": "^2.6.1"
+    }
   }
-}

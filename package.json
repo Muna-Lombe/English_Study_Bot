@@ -1,17 +1,20 @@
 {
-    "name": "learninghelper",
-    "version": "1.0.0",
-    "description": "A Telegram bot to help teachers and students learn better.",
-    "main": "app.js",
-    "scripts": {
-      "start": "node app.js"
-    },
-    "dependencies": {
-      "telegraf": "^4.7.0",
-      "@telegraf/session": "^2.0.0-beta.7",
-      "sequelize": "^6.6.5",
-      "pg": "^8.6.0",
-      "dotenv": "^10.0.0",
-      "node-fetch": "^2.6.1"
-    }
+  "name": "learninghelper",
+  "version": "1.0.0",
+  "description": "A Telegram bot to help teachers and students learn better.",
+  "main": "app.js",
+  "scripts": {
+      "start": "node index.js"
+  },
+  "dependencies": {
+    "@telegraf/session": "^2.0.0-beta.7",
+    "bad-words": "^4.0.0",
+    "dotenv": "^10.0.0",
+    "leo-profanity": "^1.7.0",
+    "node-cron": "^3.0.3",
+    "node-fetch": "^2.6.1",
+    "pg": "^8.6.0",
+    "sequelize": "^6.6.5",
+    "telegraf": "^4.7.0"
   }
+}

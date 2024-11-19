@@ -2,33 +2,33 @@ const { Group, Material } = require('../models')
 const aiService = require('../services/aiService')
 
 module.exports = {
-  handleStudentQuestion: async (ctx, question) => {
-    const chatId = ctx.chat.id.toString()
+  // handleStudentQuestion: async (ctx, question) => {
+  //   const chatId = ctx.chat.id.toString()
 
-    try {
-      const group = await Group.findOne({ where: { chat_id: chatId } })
-      if (group) {
-        const materials = await group.getMaterials({
-          where: { exercise_type: 'q&a' },
-          order: [['createdAt', 'DESC']],
-          limit: 1
-        })
+  //   try {
+  //     const group = await Group.findOne({ where: { chat_id: chatId } })
+  //     if (group) {
+  //       const materials = await group.getMaterials({
+  //         where: { exercise_type: 'q&a' },
+  //         order: [['createdAt', 'DESC']],
+  //         limit: 1
+  //       })
 
-        if (materials && materials.length > 0) {
-          const material = materials[0]
-          const answer = await aiService.getAnswer(question, material.content)
-          await ctx.reply(answer)
-        } else {
-          await ctx.reply('No Q&A materials are available at the moment.')
-        }
-      } else {
-        await ctx.reply('This group is not registered.')
-      }
-    } catch (err) {
-      console.error('Error in handleStudentQuestion:', err)
-      await ctx.reply('An error occurred while processing your question.')
-    }
-  },
+  //       if (materials && materials.length > 0) {
+  //         const material = materials[0]
+  //         const answer = await aiService.getAnswer(question, material.content)
+  //         await ctx.reply(answer)
+  //       } else {
+  //         await ctx.reply('No Q&A materials are available at the moment.')
+  //       }
+  //     } else {
+  //       await ctx.reply('This group is not registered.')
+  //     }
+  //   } catch (err) {
+  //     console.error('Error in handleStudentQuestion:', err)
+  //     await ctx.reply('An error occurred while processing your question.')
+  //   }
+  // },
 
   startQuiz: async ctx => {
     const chatId = ctx.chat.id.toString()

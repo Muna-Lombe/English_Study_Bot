@@ -15,6 +15,6 @@
     "node-fetch": "^2.6.1",
     "pg": "^8.6.0",
     "sequelize": "^6.6.5",
-    "telegraf": "^4.7.0"
+    "telegraf": "^4.16.3"
   }
 }

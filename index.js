@@ -102,28 +102,50 @@ bot.use(stage.middleware());
 
 // Scene entry middleware
 bot.use(async (ctx, next) => {
-  if (!ctx.message) return next();
+  // if (!ctx.message) return next();
 
   const user = await User.findOne({ 
     where: { telegram_id: ctx.from.id.toString() } 
   });
 
-  // Enter appropriate scene based on chat type and user role
-  if (ctx.chat.type === 'private') {
-    if (!ctx.scene.current) {
-      await ctx.scene.enter('private');
+  console.log("Context:", ctx);
+  
+
+  if(ctx.chat){
+    // Enter appropriate scene based on chat type and user role
+    if (ctx.chat.type === 'private') {
+      if (!ctx.scene.current) {
+        console.log("SCENE: private scene");
+        await ctx.scene.enter('private');
+      }
+    } else if (['group', 'supergroup'].includes(ctx.chat.type)) {
+      if (!ctx.scene.current) {
+        console.log("SCENE: group scene");
+        await ctx.scene.enter('group');
+      }
     }
-  } else if (['group', 'supergroup'].includes(ctx.chat.type)) {
-    if (!ctx.scene.current) {
-      await ctx.scene.enter('group');
+  }
+
+  if(ctx.update){
+    console.log("UPDATE:", ctx.update);
+    if (ctx.update.inline_query) {
+      if (ctx.update.inline_query.chat_type === 'private') {
+        console.log("SCENE: private scene");
+        await ctx.scene.enter('private');
+      } else if (['group', 'supergroup'].includes(ctx.update.inline_query.chat_type)) {
+        console.log("SCENE: group scene");
+        await ctx.scene.enter('group');
+      }
     }
   }
 
   // Also enter role-specific scene if user is registered
   if (user) {
     if (user.role === 'teacher' && !ctx.scene.current) {
+      console.log("SCENE: teacher scene");
       await ctx.scene.enter('teacher');
     } else if (user.role === 'student' && !ctx.scene.current) {
+      console.log("SCENE: student scene");
       await ctx.scene.enter('student');
     }
   }
@@ -213,58 +235,14 @@ bot.on('callback_query', botEventController.handleCallbackQuery)
 
   
 // Handler for messages that mention the bot
-bot.on(message('text'), botEventController.handleRejectText);
-bot.on(message('reply'), botEventController.handleRejectReply);
-bot.on(message('mention'), botEventController.handleRejectMention);
+// bot.on(message('text'), botEventController.handleRejectText);
+// bot.on(message('reply'), botEventController.handleRejectReply);
+// bot.on(message('mention'), botEventController.handleRejectMention);
 // bot.on(message('new_chat_members'), botEventController.handleBotJoin);
 // bot.on(message('left_chat_member'), botEventController.handleBotLeave);
 
 
 
-// Add these updated handlers instead
-bot.use(Telegraf.chatType(['group', 'supergroup'], async (ctx, next) => {
-  // Handle group-specific updates
-  console.log("group",ctx)
-  if (ctx.message?.new_chat_members) {
-    const newBotMember = ctx.message.new_chat_members.find(
-      member => member.id === ctx.botInfo.id
-    );
-    if (newBotMember) {
-      await botEventController.handleBotJoin(ctx);
-    }
-  } else if (ctx.message?.left_chat_member?.id === ctx.botInfo.id) {
-    await botEventController.handleBotLeave(ctx);
-  }
-
-  // Handle text messages (including mentions and replies)
-  if (ctx.message.text) {
-    // Check for mentions
-    const hasMention = ctx.message.entities?.some(entity => 
-      entity.type === 'mention' && 
-      ctx.message.text.substring(entity.offset, entity.offset + entity.length) === '@' + ctx.botInfo.username
-    );
-
-    if (hasMention) {
-      await botEventController.handleMention(ctx);
-      return;
-    }
-
-    // Check for replies to bot
-    if (ctx.message.reply_to_message?.from?.id === ctx.botInfo.id) {
-      await botEventController.handleReply(ctx);
-      return;
-    }
-
-    // Handle other text messages in group
-    await botEventController.handleText(ctx);
-  }
-
-  // Handle media messages if needed
-  if (ctx.message.photo || ctx.message.video || ctx.message.document) {
-    await botEventController.handleMedia(ctx);
-  }
-  return next();
-}));
 
 // Handle mentions and replies using message filters
 // bot.on('message', async (ctx, next) => {

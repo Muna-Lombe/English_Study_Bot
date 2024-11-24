@@ -1,4 +1,4 @@
-const { Scenes } = require('telegraf');
+const { Scenes, Telegraf } = require('telegraf');
 const studentController = require('../controllers/studentController');
 const botEventController = require('../controllers/botEventController');
 
@@ -94,16 +94,63 @@ groupScene.command('start_picture_quiz', groupController.startPictureQuiz);
 groupScene.command('start_world_trivia', groupController.startWorldTrivia);
 groupScene.command('ask', groupController.askQuestion);
 
-// Handle mentions
-groupScene.on('text', async (ctx) => {
-  const hasMention = ctx.message.entities?.some(entity => 
-    entity.type === 'mention' && 
-    ctx.message.text.substring(entity.offset, entity.offset + entity.length) === '@' + ctx.botInfo.username
-  );
 
-  if (hasMention) {
-    await botEventController.handleMention(ctx);
+// Add these updated handlers instead
+groupScene.use(Telegraf.chatType(['group', 'supergroup'], async (ctx, next) => {
+  // Handle group-specific updates
+  console.log("group",ctx)
+  if (ctx.message?.new_chat_members) {
+    const newBotMember = ctx.message.new_chat_members.find(
+      member => member.id === ctx.botInfo.id
+    );
+    if (newBotMember) {
+      await botEventController.handleBotJoin(ctx);
+    }
+  } else if (ctx.message?.left_chat_member?.id === ctx.botInfo.id) {
+    await botEventController.handleBotLeave(ctx);
   }
-});
+
+  // Handle text messages (including mentions and replies)
+  if (ctx.message.text) {
+    // Check for mentions
+    const hasMention = ctx.message.entities?.some(entity => 
+      entity.type === 'mention' && 
+      ctx.message.text.substring(entity.offset, entity.offset + entity.length) === '@' + ctx.botInfo.username
+    );
+
+    if (hasMention) {
+      await botEventController.handleMention(ctx);
+      return;
+    }
+
+    // Check for replies to bot
+    if (ctx.message.reply_to_message?.from?.id === ctx.botInfo.id) {
+      await botEventController.handleReply(ctx);
+      return;
+    }
+
+    // Handle other text messages in group
+    await botEventController.handleText(ctx);
+  }
+
+  // Handle media messages if needed
+  if (ctx.message.photo || ctx.message.video || ctx.message.document) {
+    await botEventController.handleMedia(ctx);
+  }
+  return next();
+}));
+
+
+// // Handle mentions
+// groupScene.on('text', async (ctx) => {
+//   const hasMention = ctx.message.entities?.some(entity => 
+//     entity.type === 'mention' && 
+//     ctx.message.text.substring(entity.offset, entity.offset + entity.length) === '@' + ctx.botInfo.username
+//   );
+
+//   if (hasMention) {
+//     await botEventController.handleMention(ctx);
+//   }
+// });
 
 module.exports = { groupScene }; 

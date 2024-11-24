@@ -1,6 +1,7 @@
 const { Scenes, Telegraf } = require('telegraf');
 const studentController = require('../controllers/studentController');
 const botEventController = require('../controllers/botEventController');
+const { User } = require('../models');
 
 const groupScene = new Scenes.BaseScene('group');
 
@@ -32,11 +33,11 @@ groupScene.command('help', async ctx => {
     // '\\- `/delete_material \\[material_id\\]` \\- Delete a material you\'ve uploaded\\.\n' +
     // '\\- `/update_material \\[material_id\\]` \\- Update a material you\'ve uploaded\\.\n\n' +
     // '**Commands for Students:**\n\n' +
-    '\\- `/start_quiz` \\- Starts the latest quiz in the group\\.\n' +
-    '\\- `/vocab` \\- Begins vocabulary training with the latest materials\\.\n' +
-    '\\- `/start_meme_quiz` \\- Starts the latest "Know Your Meme" exercise\\.\n' +
-    '\\- `/start_picture_quiz` \\- Starts the latest picture quiz\\.\n' +
-    '\\- `/start_world_trivia` \\- Starts the latest world trivia quiz\\.\n' +
+    // '\\- `/sta/rt_quiz` \\- Starts the latest quiz in the group\\.\n' +
+    // '\\- `/vocab` \\- Begins vocabulary training with the latest materials\\.\n' +
+    // '\\- `/start_me/me_quiz` \\- Starts the latest "Know Your Meme" exercise\\.\n' +
+    // '\\- `/start_pi/cture_quiz` \\- Starts the latest picture quiz\\.\n' +
+    // '\\- `/start_wo/rld_trivia` \\- Starts the latest world trivia quiz\\.\n' +
     '\\- `/ask` \\- Ask a question during a Q&A session\\.\n\n' +
     '**How to Use the Bot:**\n\n' +
     // '*For Teachers:*\n\n' +
@@ -66,7 +67,7 @@ groupScene.command('help', async ctx => {
     '2\\. **Ask Questions:**\n' +
     '  \\- During a Q&A session, use the `/ask` command followed by your question\\.\n' +
     '  \\- Example: `/ask What is the capital of France?`\\.\n\n' +
-    '**Note:** Replace `@LearningHelperBot` with the bot\'s actual username when mentioning or messaging\\.\n\n' +
+    '**Note:** Use `@LearningHelperBot` when mentioning or messaging\\.\n\n' +
     '**Examples:**\n\n' +
     '\\- Starting a quiz: `/start_quiz`\\.\n' +
     '\\- Asking a question: `/ask How does photosynthesis work?`\\.\n\n' +
@@ -78,20 +79,10 @@ groupScene.command('help', async ctx => {
 
 
 const groupController = {
-  startVocabularyTraining: studentController.startVocabularyTraining,
-  startQuiz: studentController.startQuiz,
-  startMemeQuiz: studentController.startMemeQuiz,
-  startPictureQuiz: studentController.startPictureQuiz,
-  startWorldTrivia: studentController.startWorldTrivia,
   askQuestion: studentController.handleStudentQuestion
 }
 
 // Group-specific commands
-groupScene.command('vocab', groupController.startVocabularyTraining);
-groupScene.command('start_quiz', groupController.startQuiz);
-groupScene.command('start_meme_quiz', groupController.startMemeQuiz);
-groupScene.command('start_picture_quiz', groupController.startPictureQuiz);
-groupScene.command('start_world_trivia', groupController.startWorldTrivia);
 groupScene.command('ask', groupController.askQuestion);
 
 

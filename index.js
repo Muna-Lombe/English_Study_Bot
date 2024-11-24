@@ -292,8 +292,8 @@ bot.catch((err, ctx) => {
 
 // Sync database and launch the bot
 sequelize
-  // .sync({force:true})
-  .sync()
+  .sync({force:true})
+  // .sync()
   .then(() => {
     bot
       .launch()

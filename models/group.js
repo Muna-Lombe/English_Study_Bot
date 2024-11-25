@@ -39,6 +39,9 @@ module.exports = sequelize => {
       timestamps: false
     }
   )
-
+  Group.hasStudent = async function(student_id){
+    const student = await User.findOne({ where: { user_id: student_id, student_group_ids: { [Op.contains]: [this.group_id] } } });
+    return student;
+  }
   return Group
 }

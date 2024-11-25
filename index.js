@@ -102,51 +102,48 @@ bot.use(stage.middleware());
 
 // Scene entry middleware
 bot.use(async (ctx, next) => {
-  // if (!ctx.message) return next();
-
   const user = await User.findOne({ 
-    where: { telegram_id: ctx.from.id.toString() } 
+    where: { telegram_id: ctx.from?.id?.toString() } 
   });
 
-  console.log("Context:", ctx);
-  
+  // If user is not registered, enter guest scene
+  if (!user && !ctx.scene.current) {
+    console.log("SCENE: guest scene");
+    await ctx.scene.enter('guest');
+    return next();
+  }
 
-  if(ctx.chat){
+  if (user && ctx.chat) {
     // Enter appropriate scene based on chat type and user role
     if (ctx.chat.type === 'private') {
-      if (!ctx.scene.current) {
-        console.log("SCENE: private scene");
-        await ctx.scene.enter('private');
+      if (user.role === 'teacher') {
+        console.log("SCENE: private teacher scene");
+        await ctx.scene.enter('privateTeacher');
+      } else {
+        console.log("SCENE: private student scene");
+        await ctx.scene.enter('privateStudent');
       }
     } else if (['group', 'supergroup'].includes(ctx.chat.type)) {
-      if (!ctx.scene.current) {
-        console.log("SCENE: group scene");
-        await ctx.scene.enter('group');
+      if (user.role === 'teacher') {
+        console.log("SCENE: group teacher scene");
+        await ctx.scene.enter('groupTeacher');
+      } else {
+        console.log("SCENE: group student scene");
+        // Check if user already exists
+        let user = await User.findOne({ where: { telegram_id: ctx.from.id.toString() } });
+        if (!user) {
+          user = await User.upsert({
+            telegram_id: ctx.from.id.toString(),
+            name: ctx.from.first_name + ' ' + ctx.from.last_name,
+            role: 'student',
+            student_group_ids: [ctx.chat.id.toString()]
+          });
+        } else {
+          user.student_group_ids.push(ctx.chat.id.toString());
+        await user.save();
       }
-    }
-  }
-
-  if(ctx.update){
-    console.log("UPDATE:", ctx.update);
-    if (ctx.update.inline_query) {
-      if (ctx.update.inline_query.chat_type === 'private') {
-        console.log("SCENE: private scene");
-        await ctx.scene.enter('private');
-      } else if (['group', 'supergroup'].includes(ctx.update.inline_query.chat_type)) {
-        console.log("SCENE: group scene");
-        await ctx.scene.enter('group');
+        await ctx.scene.enter('groupStudent');
       }
-    }
-  }
-
-  // Also enter role-specific scene if user is registered
-  if (user) {
-    if (user.role === 'teacher' && !ctx.scene.current) {
-      console.log("SCENE: teacher scene");
-      await ctx.scene.enter('teacher');
-    } else if (user.role === 'student' && !ctx.scene.current) {
-      console.log("SCENE: student scene");
-      await ctx.scene.enter('student');
     }
   }
 
@@ -193,24 +190,21 @@ bot.use((ctx, next) => {
 })
 
 // Start command handler
-bot.start(async ctx => {
+bot.command('start', async ctx => {
   await ctx.scene.leave();
-  // TODO: Check if the user is already registered
-  const user = await User.findOne({ where: { telegram_id: ctx.from.id.toString() } })
-  // console.log("found user", user)
-  if (user) {
-    await ctx.reply('Welcome back!')
-  } else {
-    // TODO: Add a welcome message
-    await ctx.reply('Welcome! Are you a Teacher or a Student?', {
-    reply_markup: {
-      keyboard: [['Teacher', 'Student']],
-      one_time_keyboard: true,
-      resize_keyboard: true
-      }
-    })
-  }
-})
+  const user = await User.findOne({ 
+    where: { telegram_id: ctx.from.id.toString() } 
+  });
+
+  // if (user) {
+  //   await ctx.reply('Welcome back! Use /help to see available commands.');
+  //   // Enter appropriate role-based scene
+  //   await ctx.scene.enter(user.role === 'teacher' ? 'teacher' : 'student');
+  // } else {
+  //   // Enter guest scene for registration
+  //   await ctx.scene.enter('guest');
+  // }
+});
 
 
 
@@ -277,11 +271,8 @@ bot.on('callback_query', botEventController.handleCallbackQuery)
 //   }
 // });
 
-// Handle chat member updates
-bot.on('chat_member_updated', async (ctx) => {
-  const update = ctx.chatMember;
-  await botEventController.handleMemberUpdates(ctx);
-});
+
+
 
 
 
@@ -290,15 +281,47 @@ bot.catch((err, ctx) => {
   console.error(`Error while handling update ${ctx.update.update_id}:`, err)
 })
 
+const checkBotGroups = async (bot)=>{
+  try {
+    // Get all groups where the bot is a member
+    const botInfo = await bot.telegram.getMe();
+    const updates = await bot.telegram.getUpdates();
+    const chatIds = [...new Set(updates.map(update => update.message?.chat.id).filter(Boolean))];
+    
+    for (const chatId of chatIds) {
+      try {
+        // Check if group exists in database
+        const group = await Group.findOne({
+          where: { chat_id: chatId.toString() }
+        });
+        
+        if (!group) {
+          console.log(`Leaving unregistered group: ${chatId}`);
+          await bot.telegram.leaveChat(chatId);
+        }else{
+          console.log(`Group ${chatId} already exists`);
+        }
+      } catch (error) {
+        console.error(`Error processing group ${chatId}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error('Error checking groups:', error);
+  }
+}
 // Sync database and launch the bot
 sequelize
   .sync({force:true})
   // .sync()
-  .then(() => {
-    bot
+  .then(async () => {
+    console.log("launching bot");
+    await bot
       .launch()
-      .then(() => {
+      .then(async () => {
         console.log('Bot started')
+         // Check and leave unregistered groups
+        await checkBotGroups(bot);
+
       })
       .catch(err => {
         console.error('Failed to launch bot:', err)

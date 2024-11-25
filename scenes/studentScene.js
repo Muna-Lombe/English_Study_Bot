@@ -1,6 +1,7 @@
 const { Scenes } = require('telegraf');
 const studentController = require('../controllers/studentController');
 
+// Create a new scene for students
 const studentScene = new Scenes.BaseScene('student');
 
 studentScene.enter(async (ctx) => {
@@ -43,10 +44,12 @@ studentScene.command('help', async ctx => {
 
 // Student commands
 studentScene.command('vocab', studentController.startVocabularyTraining)
-studentScene.command('start_quiz', studentController.startQuiz)
-studentScene.command('start_meme_quiz', studentController.startMemeQuiz)
-studentScene.command('start_picture_quiz', studentController.startPictureQuiz)
+// studentScene.command('start_quiz', studentController.startQuiz)
+// studentScene.command('start_meme_quiz', studentController.startMemeQuiz)
+// studentScene.command('start_picture_quiz', studentController.startPictureQuiz)
 // Add more student-specific handlers
 
 
+
+// Export the student scene
 module.exports = { studentScene}; 

@@ -80,31 +80,72 @@ privateScene.command('help', async ctx => {
 
 
 // Handle role selection
-privateScene.hears(['Teacher', 'Student'], async ctx => {
-  const role = ctx.message.text.toLowerCase()
-  try {
-    await User.upsert({
-      telegram_id: ctx.from.id.toString(),
-      role: role,
-      name: ctx.from.first_name
-    })
-    await ctx.reply(`You are registered as a ${role}.`)
-  } catch (err) {
-    console.error('Error saving user:', err)
-    await ctx.reply('An error occurred while registering your role.')
-  }
-})
+
 
 const privateController = {
-  uploadMaterial: teacherController.uploadMaterial,
-  listRegisteredGroups: teacherController.listRegisteredGroups,
-  registerGroup: teacherController.registerGroup,
-  listMaterials: teacherController.listMaterials,
-  scheduleMessage: teacherController.scheduleMessage,
-  cancelScheduledTask: teacherController.cancelScheduledTask,
-  updateMaterial: teacherController.updateMaterial,
-  deleteMaterial: teacherController.deleteMaterial,
-  receiveMaterial: teacherController.receiveMaterial
+  uploadMaterial: (ctx) => {
+    if (ctx.state.user.role === 'teacher') {
+      teacherController.uploadMaterial(ctx)
+    } else {
+      ctx.reply("You are not a teacher")
+    }
+  },
+  listRegisteredGroups: (ctx) => {
+    if (ctx.state.user.role === 'teacher') {
+      teacherController.listRegisteredGroups(ctx)
+    } else {
+      ctx.reply("You are not a teacher")
+    }
+  },
+  registerGroup: (ctx) => {
+    if (ctx.state.user.role === 'teacher') {
+      teacherController.registerGroup(ctx)
+    } else {
+      ctx.reply("You are not a teacher")
+    }
+  },
+  listMaterials: (ctx) => {
+    if (ctx.state.user.role === 'teacher') {
+      teacherController.listMaterials(ctx)
+    } else {
+      ctx.reply("You are not a teacher")
+    }
+  },
+  scheduleMessage: (ctx) => {
+    if (ctx.state.user.role === 'teacher') {
+      teacherController.scheduleMessage(ctx)
+    } else {
+      ctx.reply("You are not a teacher")
+    }
+  },
+  cancelScheduledTask: (ctx) => {
+    if (ctx.state.user.role === 'teacher') {
+      teacherController.cancelScheduledTask(ctx)
+    } else {
+      ctx.reply("You are not a teacher")
+    }
+  },
+  updateMaterial: (ctx) => {
+    if (ctx.state.user.role === 'teacher') {
+      teacherController.updateMaterial(ctx)
+    } else {
+      ctx.reply("You are not a teacher")
+    }
+  },
+  deleteMaterial: (ctx) => {
+    if (ctx.state.user.role === 'teacher') {
+      teacherController.deleteMaterial(ctx)
+    } else {
+      ctx.reply("You are not a teacher")
+    }
+  },
+  receiveMaterial: (ctx) => {
+    if (ctx.state.user.role === 'teacher') {
+      teacherController.receiveMaterial(ctx)
+    } else {
+      ctx.reply("You are not a teacher")
+    }
+  }
 }
 // Private chat commands
 privateScene.command('upload', privateController.uploadMaterial);

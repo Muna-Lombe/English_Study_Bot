@@ -79,10 +79,56 @@ groupScene.command('help', async ctx => {
 
 
 const groupController = {
-  askQuestion: studentController.handleStudentQuestion
+  startVocabularyTraining:(ctx) => {
+    if (ctx.state.user.role === 'student') {
+      studentController.startVocabularyTraining(ctx)
+    } else {
+      ctx.reply("You are not a student")
+    }
+  },
+  startQuiz:(ctx) => {
+    if (ctx.state.user.role === 'student') {
+      studentController.startQuiz(ctx)
+    } else {
+      ctx.reply("You are not a student")
+    }
+  },
+  startMemeQuiz:(ctx) => {
+    if (ctx.state.user.role === 'student') {
+      studentController.startMemeQuiz(ctx)
+    } else {
+      ctx.reply("You are not a student")
+    }
+  },
+  startPictureQuiz:(ctx) => {
+    if (ctx.state.user.role === 'student') {
+      studentController.startPictureQuiz(ctx)
+    } else {
+      ctx.reply("You are not a student")
+    }
+  },
+  startWorldTrivia:(ctx) => {
+    if (ctx.state.user.role === 'student') {
+      studentController.startWorldTrivia(ctx)
+    } else {
+      ctx.reply("You are not a student")
+    }
+  },
+  askQuestion:(ctx) => {
+    if (ctx.state.user.role === 'student') {
+      studentController.handleStudentQuestion(ctx)
+    } else {
+      ctx.reply("You are not a student")
+    }
+  }
 }
 
 // Group-specific commands
+groupScene.command('vocab', groupController.startVocabularyTraining);
+groupScene.command('start_quiz', groupController.startQuiz);
+groupScene.command('start_meme_quiz', groupController.startMemeQuiz);
+groupScene.command('start_picture_quiz', groupController.startPictureQuiz);
+groupScene.command('start_world_trivia', groupController.startWorldTrivia);
 groupScene.command('ask', groupController.askQuestion);
 
 

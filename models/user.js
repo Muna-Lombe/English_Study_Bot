@@ -19,8 +19,8 @@ module.exports = sequelize => {
       name: {
         type: DataTypes.STRING
       },
-      // Optional field to store the group IDs the user belongs to or is a teacher of
-      group_ids: {
+      // Optional field to store the group IDs the user belongs to 
+      student_group_ids: {
         type: DataTypes.ARRAY(DataTypes.STRING)
       }
     },

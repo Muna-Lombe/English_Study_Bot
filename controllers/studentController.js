@@ -30,6 +30,63 @@ module.exports = {
   //   }
   // },
 
+  joinGroup: async ctx => {
+    const chatId = ctx.chat.id.toString()
+    const group = await Group.findOne({ where: { chat_id: chatId } })
+    if (group) {
+      await ctx.reply('You have already joined this group.')
+    } else {
+      await ctx.reply('You have joined this group.')
+    }
+  },
+  viewProgress: async ctx => {
+    const chatId = ctx.chat.id.toString()
+    const group = await Group.findOne({ where: { chat_id: chatId } })
+    if (group) {
+      await ctx.reply('You have completed 0/100 exercises.')
+    } else {
+      await ctx.reply('This group is not registered.')
+    }
+  },
+  startPractice: async ctx => {
+    const chatId = ctx.chat.id.toString()
+    const group = await Group.findOne({ where: { chat_id: chatId } })
+    if (group) {
+      await ctx.reply('Practice session started.')
+    } else {
+      await ctx.reply('This group is not registered.')
+    }
+  },
+  askQuestion: async ctx => {
+    const chatId = ctx.chat.id.toString()
+    const group = await Group.findOne({ where: { chat_id: chatId } })
+    if (group) {
+      await ctx.reply('Question sent.')
+    } else {
+      await ctx.reply('This group is not registered.')
+    }
+  },
+  sendFeedback: async ctx => {
+    const chatId = ctx.chat.id.toString()
+    const group = await Group.findOne({ where: { chat_id: chatId } })
+    if (group) {
+      await ctx.reply('Feedback sent.')
+    } else {
+      await ctx.reply('This group is not registered.')
+    }
+  },
+  handleGroupMessage: async ctx => {
+    
+    const chatId = ctx.chat.id.toString()
+    const group = await Group.findOne({ where: { chat_id: chatId } })
+    const message = ctx.message.text
+
+    if (group) {
+      await ctx.reply(`Group message received: ${message}`)
+    } else {
+      await ctx.reply('This group is not registered.')
+    }
+  },
   startQuiz: async ctx => {
     const chatId = ctx.chat.id.toString()
     const group = await Group.findOne({ where: { chat_id: chatId } })

@@ -27,6 +27,18 @@ const isValidInviteLink = (link) => {
 const EXPIRY_MINUTES = 5;
 
 module.exports = {
+  startQuiz: async ctx => {
+    // Handle quiz start
+    await ctx.reply('Quiz started...');
+  },
+  startMemeQuiz: async ctx => {
+    // Handle meme quiz start
+    await ctx.reply('Meme quiz started...');
+  },
+  startPictureQuiz: async ctx => {
+    // Handle picture quiz start
+    await ctx.reply('Picture quiz started...');
+  },
   listMaterials : async ctx => {
     // Ensure the command is used in a private chat
     if (ctx.chat.type !== 'private') {
@@ -580,19 +592,6 @@ module.exports = {
         'Use /help to see available commands.'
       );
 
-      // Add the members who are not admins as students to the group
-      const members = await ctx.telegram.getChatMembersCount(ctx.chat.id);
-      for (let i = 0; i < members; i++) {
-        const member = await ctx.telegram.getChatMember(ctx.chat.id, i);
-        if (member.user.id.toString() !== ctx.botInfo.id.toString() && !admins.some(admin => admin.user.id.toString() === member.user.id.toString())) {
-          await User.create({
-            telegram_id: member.user.id.toString(),
-            name: member.user.first_name + ' ' + member.user.last_name,
-            role: 'student',
-            group_id: ctx.chat.id.toString()
-          });
-        }
-      }
 
     } catch (error) {
       console.error('Error in handleBotJoinRequest:', error);

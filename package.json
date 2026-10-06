@@ -10,6 +10,17 @@
   "license": "ISC",
   "dependencies": {
     "botbuilder": "^4.20.0",
-    "restify": "^11.1.0"
-  }
+    "restify": "^11.1.0",
+    "wrangler": "^4.34.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Muna-Lombe/English_Study_Bot.git"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Muna-Lombe/English_Study_Bot/issues"
+  },
+  "homepage": "https://github.com/Muna-Lombe/English_Study_Bot#readme"
 }

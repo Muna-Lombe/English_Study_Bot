@@ -238,6 +238,31 @@ module.exports = {
       console.log(`User left: ${member.old_chat_member.user.first_name}`);
     }
   },
+  handleStudentJoin: async (ctx) => {
+    console.log("SCENE: group student scene");
+    await ctx.scene.enter('groupStudent');
+  },
+  handleStudentLeave: async (ctx) => {
+    console.log("SCENE: group student scene");
+    await ctx.scene.leave();
+  },
+  handleStudentBan: async (ctx) => {
+    console.log("SCENE: group student scene");
+    await ctx.scene.leave();
+  },
+  handleStudentUnban: async (ctx) => {
+    console.log("SCENE: group student scene");
+    await ctx.scene.leave();
+  },
+  handleTeacherJoin: async (ctx) => {
+    console.log("SCENE: group teacher scene");
+    await ctx.scene.enter('groupTeacher');
+  },
+  handleTeacherLeave: async (ctx) => {
+    console.log("SCENE: group teacher scene");
+    await ctx.scene.leave();
+  },
+
   handleText: async ctx => {
     console.log(ctx)
     const message = ctx.update.message

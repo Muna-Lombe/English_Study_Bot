@@ -20,6 +20,8 @@ const { message } = require('telegraf/filters')
 const { SceneContextScene } = require('telegraf/scenes')
 const stage = require('./scenes')
 
+
+
 // Schedule a cron job to run every minute
 cron.schedule('* * * * *', async () => {
   try {
@@ -89,7 +91,12 @@ cron.schedule('* * * * *', async () => {
       await task.save()
     }
   } catch (error) {
-    console.error('Error executing scheduled tasks:', error)
+    console.error('Error executing scheduled tasks')
+    if (error.message.includes('ConnectionManager.getConnection')) {
+      console.error('Database connection error:', error.message)
+    }else{
+      console.error('Error executing scheduled tasks:', error.message)
+    }
   }
 })
 
@@ -105,46 +112,51 @@ bot.use(async (ctx, next) => {
   const user = await User.findOne({ 
     where: { telegram_id: ctx.from?.id?.toString() } 
   });
-
-  // If user is not registered, enter guest scene
-  if (!user && !ctx.scene.current) {
+  
+  // If user is not registered and chat type is private, enter guest scene
+  if (!user && !ctx.scene.current && ctx?.chat?.type === 'private') {
     console.log("SCENE: guest scene");
     await ctx.scene.enter('guest');
     return next();
   }
 
+  // if it is a chat message, enter the appropriate scene
   if (user && ctx.chat) {
     // Enter appropriate scene based on chat type and user role
     if (ctx.chat.type === 'private') {
-      if (user.role === 'teacher') {
-        console.log("SCENE: private teacher scene");
-        await ctx.scene.enter('privateTeacher');
-      } else {
-        console.log("SCENE: private student scene");
-        await ctx.scene.enter('privateStudent');
-      }
+      console.log("SCENE: private scene");
+      await ctx.scene.enter('private');
+      return next()
     } else if (['group', 'supergroup'].includes(ctx.chat.type)) {
-      if (user.role === 'teacher') {
-        console.log("SCENE: group teacher scene");
-        await ctx.scene.enter('groupTeacher');
-      } else {
-        console.log("SCENE: group student scene");
-        // Check if user already exists
-        let user = await User.findOne({ where: { telegram_id: ctx.from.id.toString() } });
-        if (!user) {
-          user = await User.upsert({
-            telegram_id: ctx.from.id.toString(),
-            name: ctx.from.first_name + ' ' + ctx.from.last_name,
-            role: 'student',
-            student_group_ids: [ctx.chat.id.toString()]
-          });
-        } else {
-          user.student_group_ids.push(ctx.chat.id.toString());
-        await user.save();
-      }
-        await ctx.scene.enter('groupStudent');
-      }
+      console.log("SCENE: group scene");
+      await ctx.scene.enter('group');
+      return next();
     }
+          
+  }
+
+  // if it an inline query, enter the appropriate scene
+  if (user && ctx.inlineQuery) {
+    console.log("SCENE: inline query scene");
+    console.log(ctx.inlineQuery);
+    // TODO: enter the appropriate scene based on the inline query
+    // await ctx.scene.enter('inlineQuery');
+  }
+
+  // if it is a callback query, enter the appropriate scene
+  if (user && ctx.callbackQuery) {
+    console.log("SCENE: callback query scene");
+    console.log(ctx.callbackQuery);
+    // TODO: enter the appropriate scene based on the callback query
+    // await ctx.scene.enter('callbackQuery');
+  }
+
+  // if it is a message, enter the appropriate scene
+  if (user && ctx.message) {
+    console.log("SCENE: message scene");
+    console.log(ctx.message);
+    // TODO: enter the appropriate scene based on the message
+    // await ctx.scene.enter('message');
   }
 
   return next();
@@ -214,20 +226,20 @@ bot.command('help', async (ctx) => {
   const helpText =
     '*LearningHelper Bot Commands:*\n\n' +
     '**General Commands:**\n\n' +
-    '\\- `/start` \\- Start interacting with the bot and select your role\\.\n' +
-    '\\- `/help` \\- Display this help message\\.\n\n' +
-    '**Note:** Replace `@' + BOT_USERNAME + '` with the bot\'s actual username when mentioning or messaging\\.\n\n' +
-    '*Need further assistance?* Feel free to reach out to your teacher or contact the bot developer\\.\n\n' +
-    '*Happy learning\\!*'
+    '\- `/start` \- Start interacting with the bot and select your role\.\n' +
+    '\- `/help` \- Display this help message\\.\n\n' +
+    '**Note:** Use`@' + BOT_USERNAME + '` when mentioning or messaging\.\n\n' +
+    '*Need further assistance?* Feel free to reach out to your teacher or contact the bot developer\.\n\n' +
+    '*Happy learning\!*'
     ; // Function to get context-specific help
   await ctx.reply(helpText);
 });
 
 // Handler for callback queries
-bot.on('callback_query', botEventController.handleCallbackQuery)
+// bot.on('callback_query', botEventController.handleCallbackQuery)
 
 
-  
+
 // Handler for messages that mention the bot
 // bot.on(message('text'), botEventController.handleRejectText);
 // bot.on(message('reply'), botEventController.handleRejectReply);
@@ -284,10 +296,12 @@ bot.catch((err, ctx) => {
 const checkBotGroups = async (bot)=>{
   try {
     // Get all groups where the bot is a member
+    return;
     const botInfo = await bot.telegram.getMe();
     const updates = await bot.telegram.getUpdates();
     const chatIds = [...new Set(updates.map(update => update.message?.chat.id).filter(Boolean))];
     
+    console.log(chatIds);
     for (const chatId of chatIds) {
       try {
         // Check if group exists in database
@@ -295,6 +309,7 @@ const checkBotGroups = async (bot)=>{
           where: { chat_id: chatId.toString() }
         });
         
+        console.log(group);
         if (!group) {
           console.log(`Leaving unregistered group: ${chatId}`);
           await bot.telegram.leaveChat(chatId);
@@ -314,18 +329,17 @@ sequelize
   .sync({force:true})
   // .sync()
   .then(async () => {
-    console.log("launching bot");
-    await bot
-      .launch()
-      .then(async () => {
-        console.log('Bot started')
-         // Check and leave unregistered groups
+    // console.log("launching bot");
+    console.log("Launching bot...");
+    try {
+      await bot.launch({dropPendingUpdates: true},async ()=>{
+        console.log("Bot launched");
         await checkBotGroups(bot);
-
-      })
-      .catch(err => {
-        console.error('Failed to launch bot:', err)
-      })
+      });
+      // console.log('Bot started');
+    } catch (err) {
+      console.error('Failed to launch bot:', err);
+    }
   })
   .catch(err => {
     console.error('Unable to connect to the database:', err)
@@ -333,12 +347,12 @@ sequelize
 
 // Enable graceful stop
 process.once('SIGINT', () => {
-  console.log('Shutting down bot...')
-  bot.stop('SIGINT')
+  console.log('SIGINT: Shutting down bot...')
   sequelize.close()
+  bot.stop('SIGINT')
 })
 process.once('SIGTERM', () => {
-  console.log('Shutting down bot...')
+  console.log('SIGTERM: Shutting down bot...')
   bot.stop('SIGTERM')
   sequelize.close()
 })

@@ -17,15 +17,15 @@ privateTeacherScene.command('help', async (ctx) => {
     '*Teacher Commands:*\n\n' +
     '📚 *Material Management*\n' +
     '/upload - Upload new learning materials\n' +
-    '/list_materials - View your materials\n' +
-    '/update_material - Update existing material\n' +
-    '/delete_material - Remove material\n\n' +
+    '/list\\_materials - View your materials\n' +
+    '/update\\_material - Update existing material\n' +
+    '/delete\\_material - Remove material\n\n' +
     '👥 *Group Management*\n' +
-    '/register_group - Register a new group\n' +
-    '/my_groups - List your groups\n\n' +
+    '/register\\_group - Register a new group\n' +
+    '/my\\_groups - List your groups\n\n' +
     '⏰ *Scheduling*\n' +
     '/schedule - Schedule material delivery\n' +
-    '/cancel_schedule - Cancel scheduled task',
+    '/cancel\\_schedule - Cancel scheduled task',
     { parse_mode: 'Markdown' }
   );
 });

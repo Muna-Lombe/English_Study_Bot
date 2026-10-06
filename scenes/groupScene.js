@@ -1,9 +1,18 @@
 const { Scenes, Telegraf } = require('telegraf');
 const studentController = require('../controllers/studentController');
 const botEventController = require('../controllers/botEventController');
-const { User } = require('../models');
+const { User, Group } = require('../models');
 
 const groupScene = new Scenes.BaseScene('group');
+
+// Scene enter handler
+groupScene.enter(async (ctx) => {
+  await ctx.reply(
+    'group scene' +
+    'Use /help to see available commands.'
+  );
+});
+
 
 // Scene-specific middleware
 groupScene.use(async (ctx, next) => {
@@ -78,73 +87,197 @@ groupScene.command('help', async ctx => {
 })
 
 
-const groupController = {
-  startVocabularyTraining:(ctx) => {
-    if (ctx.state.user.role === 'student') {
-      studentController.startVocabularyTraining(ctx)
-    } else {
-      ctx.reply("You are not a student")
-    }
-  },
-  startQuiz:(ctx) => {
-    if (ctx.state.user.role === 'student') {
-      studentController.startQuiz(ctx)
-    } else {
-      ctx.reply("You are not a student")
-    }
-  },
-  startMemeQuiz:(ctx) => {
-    if (ctx.state.user.role === 'student') {
-      studentController.startMemeQuiz(ctx)
-    } else {
-      ctx.reply("You are not a student")
-    }
-  },
-  startPictureQuiz:(ctx) => {
-    if (ctx.state.user.role === 'student') {
-      studentController.startPictureQuiz(ctx)
-    } else {
-      ctx.reply("You are not a student")
-    }
-  },
-  startWorldTrivia:(ctx) => {
-    if (ctx.state.user.role === 'student') {
-      studentController.startWorldTrivia(ctx)
-    } else {
-      ctx.reply("You are not a student")
-    }
-  },
-  askQuestion:(ctx) => {
-    if (ctx.state.user.role === 'student') {
-      studentController.handleStudentQuestion(ctx)
-    } else {
-      ctx.reply("You are not a student")
-    }
-  }
-}
+// const groupController = {
+//   startVocabularyTraining:(ctx) => {
+//     if (ctx.state.user.role === 'student') {
+//       studentController.startVocabularyTraining(ctx)
+//     } else {
+//       ctx.reply("You are not a student")
+//     }
+//   },
+//   startQuiz:(ctx) => {
+//     if (ctx.state.user.role === 'student') {
+//       studentController.startQuiz(ctx)
+//     } else {
+//       ctx.reply("You are not a student")
+//     }
+//   },
+//   startMemeQuiz:(ctx) => {
+//     if (ctx.state.user.role === 'student') {
+//       studentController.startMemeQuiz(ctx)
+//     } else {
+//       ctx.reply("You are not a student")
+//     }
+//   },
+//   startPictureQuiz:(ctx) => {
+//     if (ctx.state.user.role === 'student') {
+//       studentController.startPictureQuiz(ctx)
+//     } else {
+//       ctx.reply("You are not a student")
+//     }
+//   },
+//   startWorldTrivia:(ctx) => {
+//     if (ctx.state.user.role === 'student') {
+//       studentController.startWorldTrivia(ctx)
+//     } else {
+//       ctx.reply("You are not a student")
+//     }
+//   },
+//   askQuestion:(ctx) => {
+//     if (ctx.state.user.role === 'student') {
+//       studentController.handleStudentQuestion(ctx)
+//     } else {
+//       ctx.reply("You are not a student")
+//     }
+//   }
+// }
 
 // Group-specific commands
-groupScene.command('vocab', groupController.startVocabularyTraining);
-groupScene.command('start_quiz', groupController.startQuiz);
-groupScene.command('start_meme_quiz', groupController.startMemeQuiz);
-groupScene.command('start_picture_quiz', groupController.startPictureQuiz);
-groupScene.command('start_world_trivia', groupController.startWorldTrivia);
-groupScene.command('ask', groupController.askQuestion);
+// groupScene.command('vocab', groupController.startVocabularyTraining);
+// groupScene.command('start_quiz', groupController.startQuiz);
+// groupScene.command('start_meme_quiz', groupController.startMemeQuiz);
+// groupScene.command('start_picture_quiz', groupController.startPictureQuiz);
+// groupScene.command('start_world_trivia', groupController.startWorldTrivia);
+// groupScene.command('ask', groupController.askQuestion);
 
 
 // Add these updated handlers instead
+
 groupScene.use(Telegraf.chatType(['group', 'supergroup'], async (ctx, next) => {
+  const user = (await User.findOne({ 
+    where: { telegram_id: ctx.from?.id?.toString() } 
+  })) || (await User.findOne({ 
+    where: { telegram_id: ctx.update?.inline_query?.from?.id?.toString() } 
+  }));
+  const registeredGroup = await Group.findOne({ where: { chat_id: ctx.chat?.id.toString() } });
+  // If chat type is supergroup and group does not exist, do not enter any scene
+  if(!registeredGroup){
+    // check if the stage is registering a group
+    
+    console.log(`Group ${ctx.chat.id} not found, leaving`);
+    await ctx.reply('Group not found, please contact your teacher to register this group.');
+    // await ctx.telegram.leaveChat(ctx.chat.id);
+    return next();
+  }
+  
+  // check if user is registered
+  if(!user){
+    // check if the user is an admin of the group but not a bot
+    const isAdmin = ctx.chat.admins.some(admin => admin.user.id === ctx.from.id && admin.user.id !== ctx.botInfo.id);
+    if(isAdmin){
+      user = await User.upsert({
+        telegram_id: ctx.from.id.toString(),
+        name: ctx.from.first_name + ' ' + ctx.from.last_name,
+        role: 'teacher',
+        student_group_ids: []
+      });
+    }else{
+      // add the user as a student to the group
+      user = await User.upsert({
+        telegram_id: ctx.from.id.toString(),
+        name: ctx.from.first_name + ' ' + ctx.from.last_name,
+        role: 'student',
+        student_group_ids: [ctx.chat.id.toString()]
+      });
+    }
+  }
+
+  // If user is a student, check if they are already in the group
+  if(user.role === 'student'){
+    console.log("SCENE: group student scene");
+    // Check if user is a student and already exists
+    const studentInGroup = user.student_group_ids.includes(ctx.chat.id.toString());
+    if(!studentInGroup){
+      user = await User.upsert({
+        telegram_id: ctx.from.id.toString(),
+        student_group_ids: [...user.student_group_ids, ctx.chat.id.toString()]
+      });
+    } else {
+      user.student_group_ids.push(ctx.chat.id.toString());
+      await user.save();
+    }
+    return await ctx.scene.enter('groupStudent');
+  } else if (user.role === 'teacher') {
+    console.log("SCENE: group teacher scene");
+    return await ctx.scene.enter('groupTeacher');
+  } 
+
   // Handle group-specific updates
   console.log("group",ctx)
   if (ctx.message?.new_chat_members) {
+    // handle bot was added to group
     const newBotMember = ctx.message.new_chat_members.find(
       member => member.id === ctx.botInfo.id
     );
     if (newBotMember) {
       await botEventController.handleBotJoin(ctx);
+      return next();
     }
-  } else if (ctx.message?.left_chat_member?.id === ctx.botInfo.id) {
-    await botEventController.handleBotLeave(ctx);
+
+    // handle student was added to group
+    const newStudentMember = ctx.message.new_chat_members.find(
+      member => member.id !== ctx.botInfo.id
+    );
+    if (newStudentMember) {
+      await botEventController.handleStudentJoin(ctx);
+      return next();
+    }
+
+    // handle student left group
+    const leftStudentMember = ctx.message.left_chat_members.find(
+      member => member.id !== ctx.botInfo.id && //student is not the bot
+        !ctx.chat.admins.some(admin => admin.user.id === member.id) //student is not an admin of the group
+    );
+    if (leftStudentMember) {
+      await botEventController.handleStudentLeave(ctx);
+      return next();
+    }
+
+    // handle student was banned from group
+    const bannedStudentMember = ctx.message.left_chat_members.find(
+      member => member.id !== ctx.botInfo.id
+    );
+    if (bannedStudentMember) {
+      await botEventController.handleStudentBan(ctx);
+      return next();
+    }
+
+    // handle student was unbanned from group
+    const unbannedStudentMember = ctx.message.left_chat_members.find(
+      member => member.id !== ctx.botInfo.id
+    );
+    if (unbannedStudentMember) {
+      await botEventController.handleStudentUnban(ctx);
+      return next();
+    }
+
+    // handle teacher joined group
+    const newTeacherMember = ctx.message.new_chat_members.find(
+      member => member.id !== ctx.botInfo.id && //teacher is not the bot
+        ctx.chat.admins.some(admin => admin.user.id === member.id) //teacher is an admin of the group
+    );
+    if (newTeacherMember) {
+      await botEventController.handleTeacherJoin(ctx);
+      return next();
+    }
+
+    // handle teacher left group
+    const leftTeacherMember = ctx.message.left_chat_members.find(
+      member => member.id === ctx.from.id
+    );
+    if (leftTeacherMember) {
+      await botEventController.handleTeacherLeave(ctx);
+      return next();
+    }
+
+    // handle bot left group
+    const leftBotMember = ctx.message.left_chat_members.find(
+      member => member.id === ctx.botInfo.id
+    );
+    if (leftBotMember) {
+      await botEventController.handleBotLeave(ctx);
+      return next();
+    }
   }
 
   // Handle text messages (including mentions and replies)
@@ -157,13 +290,13 @@ groupScene.use(Telegraf.chatType(['group', 'supergroup'], async (ctx, next) => {
 
     if (hasMention) {
       await botEventController.handleMention(ctx);
-      return;
+      return next();
     }
 
     // Check for replies to bot
     if (ctx.message.reply_to_message?.from?.id === ctx.botInfo.id) {
       await botEventController.handleReply(ctx);
-      return;
+      return next();
     }
 
     // Handle other text messages in group

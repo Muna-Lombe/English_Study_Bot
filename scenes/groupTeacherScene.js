@@ -4,6 +4,15 @@ const botEventController = require('../controllers/botEventController');
 
 const groupTeacherScene = new Scenes.BaseScene('groupTeacher');
 
+
+// Scene enter handler
+groupTeacherScene.enter(async (ctx) => {
+  await ctx.reply(
+    '👋Group teacher scene' +
+    'Use /help to see available commands.'
+  );
+});
+
 // Help command handler
 groupTeacherScene.command('help', async (ctx) => {
   await ctx.reply(

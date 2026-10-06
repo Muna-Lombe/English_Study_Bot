@@ -1,8 +1,18 @@
-const { Scenes } = require('telegraf');
+const { Scenes, Telegraf } = require('telegraf');
 const teacherController = require('../controllers/teacherController');
 const { User } = require('../models');
+const botEventController = require('../controllers/botEventController');
 
 const privateScene = new Scenes.BaseScene('private');
+
+// Scene enter handler
+privateScene.enter(async (ctx) => {
+  await ctx.reply(
+    '👋 Private scene' +
+    'Use /help to see available commands.'
+  );
+});
+
 
 // Scene-specific middleware
 privateScene.use(async (ctx, next) => {
@@ -148,20 +158,79 @@ const privateController = {
   }
 }
 // Private chat commands
-privateScene.command('upload', privateController.uploadMaterial);
-privateScene.command('my_groups', privateController.listRegisteredGroups);
-privateScene.command('register_group', privateController.registerGroup);
-privateScene.command('list_materials', privateController.listMaterials);
-privateScene.command('schedule', privateController.scheduleMessage);
-privateScene.command('cancel_schedule', privateController.cancelScheduledTask)
-privateScene.command('update_material', privateController.updateMaterial)
-privateScene.command('delete_material', privateController.deleteMaterial)
+// privateScene.command('upload', privateController.uploadMaterial);
+// privateScene.command('my_groups', privateController.listRegisteredGroups);
+// privateScene.command('register_group', privateController.registerGroup);
+// privateScene.command('list_materials', privateController.listMaterials);
+// privateScene.command('schedule', privateController.scheduleMessage);
+// privateScene.command('cancel_schedule', privateController.cancelScheduledTask)
+// privateScene.command('update_material', privateController.updateMaterial)
+// privateScene.command('delete_material', privateController.deleteMaterial)
 
 // Handle regular messages
-privateScene.on('text', async (ctx) => {
-  if (ctx.session?.updateStep === 'awaitingNewContent') {
-    await privateController.receiveMaterial(ctx);
+// privateScene.on('text', async (ctx) => {
+//   if (ctx.session?.updateStep === 'awaitingNewContent') {
+//     await privateController.receiveMaterial(ctx);
+//   }
+// });
+
+
+privateScene.use(Telegraf.chatType(['private'], async (ctx, next) => {
+  const user = (await User.findOne({ 
+    where: { telegram_id: ctx.from?.id?.toString() } 
+  })) || (await User.findOne({ 
+    where: { telegram_id: ctx.update?.inline_query?.from?.id?.toString() } 
+  }));
+
+  // If chat type is supergroup and group does not exist, do not enter any scene
+  if(!user){
+    console.log(`User ${ctx.from.id} not found, leaving`);
+    // await ctx.reply('You are not registered, please register to continue.');
+    ctx.scene.leave();
+    return ctx.enter('guest')
   }
-});
+  
+  if(user.role === 'student'){
+    console.log("SCENE: private student scene");
+    return await ctx.scene.enter('privateStudent');
+  } else if (user.role === 'teacher') {
+    console.log("SCENE: private teacher scene");
+    return await ctx.scene.enter('privateTeacher');
+  } 
+
+  // Handle group-specific updates
+  console.log("private",ctx)
+  
+
+  // Handle text messages (including mentions and replies)
+  if (ctx.message.text) {
+    // Check for mentions
+    const hasMention = ctx.message.entities?.some(entity => 
+      entity.type === 'mention' && 
+      ctx.message.text.substring(entity.offset, entity.offset + entity.length) === '@' + ctx.botInfo.username
+    );
+
+    if (hasMention) {
+      await botEventController.handleMention(ctx);
+      return;
+    }
+
+    // Check for replies to bot
+    if (ctx.message.reply_to_message?.from?.id === ctx.botInfo.id) {
+      await botEventController.handleReply(ctx);
+      return;
+    }
+
+    // Handle other text messages in group
+    await botEventController.handleText(ctx);
+  }
+
+  // Handle media messages if needed
+  if (ctx.message.photo || ctx.message.video || ctx.message.document) {
+    await botEventController.handleMedia(ctx);
+  }
+  return next();
+}));
+
 
 module.exports = { privateScene }; 
